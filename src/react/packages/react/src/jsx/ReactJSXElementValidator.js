@@ -404,7 +404,7 @@ export function jsxWithValidation(
     } else {
       validatePropTypes(element);
     }
-
+    // 这里render的就是reactElement的结构，jsx转换后的
     return element;
   }
 }

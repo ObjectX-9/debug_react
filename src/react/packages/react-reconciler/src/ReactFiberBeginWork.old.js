@@ -3704,7 +3704,7 @@ function beginWork(
       );
     }
   }
-
+  // update时：如果current存在可能存在优化路径，可以复用current（即上一次更新的Fiber节点）
   if (current !== null) {
     const oldProps = current.memoizedProps;
     const newProps = workInProgress.pendingProps;
@@ -3776,7 +3776,7 @@ function beginWork(
   // sometimes bails out later in the begin phase. This indicates that we should
   // move this assignment out of the common path and into each branch.
   workInProgress.lanes = NoLanes;
-
+  // mount时：根据tag不同，创建不同的子Fiber节点
   switch (workInProgress.tag) {
     case IndeterminateComponent: {
       return mountIndeterminateComponent(
