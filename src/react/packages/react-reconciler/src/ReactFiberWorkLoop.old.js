@@ -631,7 +631,7 @@ export function scheduleUpdateOnFiber(
         markRootSuspended(root, workInProgressRootRenderLanes);
       }
     }
-
+    // !!!这里是执行render的流程
     ensureRootIsScheduled(root, eventTime);
     if (
       lane === SyncLane &&
@@ -1269,6 +1269,7 @@ function performSyncWorkOnRoot(root) {
   const finishedWork: Fiber = (root.current.alternate: any);
   root.finishedWork = finishedWork;
   root.finishedLanes = lanes;
+  // 开启commit阶段
   commitRoot(
     root,
     workInProgressRootRecoverableErrors,
@@ -1828,6 +1829,11 @@ function workLoopConcurrent() {
   }
 }
 
+/**
+ * performUnitOfWork方法会创建下一个Fiber节点并赋值给workInProgress，
+ * 并将workInProgress与已创建的Fiber节点连接起来构成Fiber树。
+ * @param {*} unitOfWork workInProgress
+ */
 function performUnitOfWork(unitOfWork: Fiber): void {
   console.log("✅ zhuling ~  unitOfWork old:", unitOfWork);
   // The current, flushed, state of this fiber is the alternate. Ideally

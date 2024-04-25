@@ -93,6 +93,7 @@ ReactDOMHydrationRoot.prototype.render = ReactDOMRoot.prototype.render = functio
   children: ReactNodeList,
 ): void {
   console.log("✅ zhuling ~  children:", children);
+  // 这个是在createRoot的时候设置的，是FiberRootNode
   const root = this._internalRoot;
   if (root === null) {
     throw new Error('Cannot update an unmounted root.');

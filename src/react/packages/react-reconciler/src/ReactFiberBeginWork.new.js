@@ -291,6 +291,7 @@ export function reconcileChildren(
   nextChildren: any,
   renderLanes: Lanes,
 ) {
+  // 如果是挂载阶段，新建fiber节点
   if (current === null) {
     // If this is a fresh new component that hasn't been rendered yet, we
     // won't update its child set by applying minimal side-effects. Instead,
@@ -303,6 +304,7 @@ export function reconcileChildren(
       renderLanes,
     );
   } else {
+    // 对于update的组件，他会将当前组件与该组件在上次更新时对应的Fiber节点比较（也就是俗称的Diff算法），将比较的结果生成新Fiber节点
     // If the current child is the same as the work in progress, it means that
     // we haven't yet started any work on these children. Therefore, we use
     // the clone algorithm to create a copy of all the current children.
@@ -3682,6 +3684,10 @@ function attemptEarlyBailoutIfNoScheduledUpdate(
   return bailoutOnAlreadyFinishedWork(current, workInProgress, renderLanes);
 }
 
+/**
+ * render阶段的递阶段，用于递归遍历，首先从rootFiber开始向下深度优先遍历。
+ * beginWork的工作是传入当前Fiber节点，创建子Fiber节点，我们从传参来看看具体是如何做的。
+ */
 function beginWork(
   current: Fiber | null,
   workInProgress: Fiber,
@@ -3704,11 +3710,12 @@ function beginWork(
       );
     }
   }
-
+  // current不为空，如果current存在，在满足一定条件时可以复用current节点，
+  // 这样就能克隆current.child作为workInProgress.child，而不需要新建workInProgress.child。
   if (current !== null) {
     const oldProps = current.memoizedProps;
     const newProps = workInProgress.pendingProps;
-
+    // props与fiber.type不变
     if (
       oldProps !== newProps ||
       hasLegacyContextChanged() ||
@@ -3719,6 +3726,7 @@ function beginWork(
       // This may be unset if the props are determined to be equal later (memo).
       didReceiveUpdate = true;
     } else {
+      // 即当前Fiber节点优先级不够，会在讲解Scheduler时介绍
       // Neither props nor legacy context changes. Check if there's a pending
       // update or context change.
       const hasScheduledUpdateOrContext = checkScheduledUpdateOrContext(
@@ -3752,6 +3760,7 @@ function beginWork(
       }
     }
   } else {
+    // current为空，则是第一次挂载，除了根fiber节点外，其他节点根据类型创建
     didReceiveUpdate = false;
 
     if (getIsHydrating() && isForkedChild(workInProgress)) {
