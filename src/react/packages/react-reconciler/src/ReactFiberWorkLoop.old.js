@@ -531,6 +531,7 @@ export function scheduleUpdateOnFiber(
   lane: Lane,
   eventTime: number,
 ) {
+  // 检查嵌套更新
   checkForNestedUpdates();
 
   if (__DEV__) {
@@ -546,8 +547,9 @@ export function scheduleUpdateOnFiber(
   }
 
   // Mark that the root has a pending update.
+  // 标记根节点有更新
   markRootUpdated(root, lane, eventTime);
-
+  // 渲染阶段更新处理
   if (
     (executionContext & RenderContext) !== NoLanes &&
     root === workInProgressRoot
@@ -567,6 +569,7 @@ export function scheduleUpdateOnFiber(
   } else {
     // This is a normal update, scheduled from outside the render phase. For
     // example, during an input event.
+    // 正常更新处理
     if (enableUpdaterTracking) {
       if (isDevToolsPresent) {
         addFiberToLanesMap(root, fiber, lane);
@@ -605,7 +608,7 @@ export function scheduleUpdateOnFiber(
         addTransitionToLanesMap(root, transition, lane);
       }
     }
-
+    // 处理中间更新
     if (root === workInProgressRoot) {
       // Received an update to a tree that's in the middle of rendering. Mark
       // that there was an interleaved update work on this root. Unless the
@@ -631,8 +634,9 @@ export function scheduleUpdateOnFiber(
         markRootSuspended(root, workInProgressRootRenderLanes);
       }
     }
-
+    // # 确定根节点（root）的调度【重要】
     ensureRootIsScheduled(root, eventTime);
+    // 处理同步更新
     if (
       lane === SyncLane &&
       executionContext === NoContext &&
@@ -693,9 +697,11 @@ function ensureRootIsScheduled(root: FiberRoot, currentTime: number) {
 
   // Check if any lanes are being starved by other work. If so, mark them as
   // expired so we know to work on those next.
+  // 检查是否有被其他工作饿死的 lanes。如果有，标记它们为过期，以便我们知道接下来要处理这些。
   markStarvedLanesAsExpired(root, currentTime);
 
   // Determine the next lanes to work on, and their priority.
+  // 确定要处理的下一个 lanes 及其优先级。
   const nextLanes = getNextLanes(
     root,
     root === workInProgressRoot ? workInProgressRootRenderLanes : NoLanes,
@@ -703,6 +709,7 @@ function ensureRootIsScheduled(root: FiberRoot, currentTime: number) {
 
   if (nextLanes === NoLanes) {
     // Special case: There's nothing to work on.
+    // 特殊情况：没有需要处理的内容。
     if (existingCallbackNode !== null) {
       cancelCallback(existingCallbackNode);
     }
@@ -712,25 +719,31 @@ function ensureRootIsScheduled(root: FiberRoot, currentTime: number) {
   }
 
   // We use the highest priority lane to represent the priority of the callback.
+  // 使用最高优先级的 lane 来表示回调的优先级。
   const newCallbackPriority = getHighestPriorityLane(nextLanes);
 
   // Check if there's an existing task. We may be able to reuse it.
+  // 检查是否有现有任务。我们可能可以重用它。
   const existingCallbackPriority = root.callbackPriority;
   if (
     existingCallbackPriority === newCallbackPriority &&
     // Special case related to `act`. If the currently scheduled task is a
     // Scheduler task, rather than an `act` task, cancel it and re-scheduled
     // on the `act` queue.
+    // 特殊情况与 `act` 相关。如果当前调度的任务是一个调度器任务，
+    // 而不是一个 `act` 任务，则取消它并重新调度到 `act` 队列。
     !(
       __DEV__ &&
       ReactCurrentActQueue.current !== null &&
       existingCallbackNode !== fakeActCallbackNode
     )
+
   ) {
     if (__DEV__) {
       // If we're going to re-use an existing task, it needs to exist.
       // Assume that discrete update microtasks are non-cancellable and null.
       // TODO: Temporary until we confirm this warning is not fired.
+      // 如果我们要重用现有任务，它需要存在。
       if (
         existingCallbackNode == null &&
         existingCallbackPriority !== SyncLane
@@ -741,19 +754,23 @@ function ensureRootIsScheduled(root: FiberRoot, currentTime: number) {
       }
     }
     // The priority hasn't changed. We can reuse the existing task. Exit.
+    // 优先级没有改变。我们可以重用现有任务。退出。
     return;
   }
 
   if (existingCallbackNode != null) {
+    // 取消现有的回调。我们将在下面调度一个新的。
     // Cancel the existing callback. We'll schedule a new one below.
     cancelCallback(existingCallbackNode);
   }
 
   // Schedule a new callback.
+  // 调度一个新的回调。
   let newCallbackNode;
   if (newCallbackPriority === SyncLane) {
     // Special case: Sync React callbacks are scheduled on a special
     // internal queue
+    // 特殊情况：同步 React 回调被调度在一个特殊的内部队列中
     if (root.tag === LegacyRoot) {
       if (__DEV__ && ReactCurrentActQueue.isBatchingLegacy !== null) {
         ReactCurrentActQueue.didScheduleLegacyUpdate = true;
@@ -763,11 +780,14 @@ function ensureRootIsScheduled(root: FiberRoot, currentTime: number) {
       scheduleSyncCallback(performSyncWorkOnRoot.bind(null, root));
     }
     if (supportsMicrotasks) {
+      // 在 microtask 中刷新队列。
       // Flush the queue in a microtask.
       if (__DEV__ && ReactCurrentActQueue.current !== null) {
         // Inside `act`, use our internal `act` queue so that these get flushed
         // at the end of the current scope even when using the sync version
         // of `act`.
+        // 在 `act` 内部，使用我们的内部 `act` 队列，
+        // 以便这些在当前作用域结束时即使使用同步版本的 `act` 也能被刷新。
         ReactCurrentActQueue.current.push(flushSyncCallbacks);
       } else {
         scheduleMicrotask(() => {
@@ -786,6 +806,7 @@ function ensureRootIsScheduled(root: FiberRoot, currentTime: number) {
         });
       }
     } else {
+      // 在 Immediate 任务中刷新队列。
       // Flush the queue in an Immediate task.
       scheduleCallback(ImmediateSchedulerPriority, flushSyncCallbacks);
     }
@@ -1656,6 +1677,7 @@ export function renderHasNotSuspendedYet(): boolean {
 }
 
 function renderRootSync(root: FiberRoot, lanes: Lanes) {
+  console.log("✅ ~ root:", root)
   const prevExecutionContext = executionContext;
   executionContext |= RenderContext;
   const prevDispatcher = pushDispatcher();

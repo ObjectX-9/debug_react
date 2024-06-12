@@ -1,11 +1,12 @@
-import * as React from 'react';
-import * as ReactDOM from 'react-dom/client';
-import './index.css';
-import App from './App';
-console.log("✅ zhuling ~  App:", App());
-import reportWebVitals from './reportWebVitals';
+import * as React from "react";
+import * as ReactDOM from "react-dom/client";
+import "./index.css";
+import App from "./App";
+console.log("✅~  App:", App());
+import reportWebVitals from "./reportWebVitals";
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
+const root = ReactDOM.createRoot(document.getElementById("root"));
+console.log("✅ ~ root:", root);
 root.render(
   <React.StrictMode>
     <App />

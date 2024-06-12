@@ -309,6 +309,7 @@ export function createHydrationContainer(
   const current = root.current;
   const eventTime = requestEventTime();
   const lane = requestUpdateLane(current);
+  // 更新入队
   const update = createUpdate(eventTime, lane);
   update.callback =
     callback !== undefined && callback !== null ? callback : null;
@@ -325,23 +326,26 @@ export function updateContainer(
   callback: ?Function,
 ): Lane {
   if (__DEV__) {
+    // 初始开发模式的检查和调度根节点的更新
     onScheduleRoot(container, element);
   }
   const current = container.current;
+  // 获取当前容器中的根节点和事件时间
   const eventTime = requestEventTime();
+  // 请求更新车道
   const lane = requestUpdateLane(current);
 
   if (enableSchedulingProfiler) {
     markRenderScheduled(lane);
   }
-
+  // 获取并设置上下文
   const context = getContextForSubtree(parentComponent);
   if (container.context === null) {
     container.context = context;
   } else {
     container.pendingContext = context;
   }
-
+  // 在开发模式下，检查嵌套更新的警告
   if (__DEV__) {
     if (
       ReactCurrentFiberIsRendering &&
@@ -358,12 +362,12 @@ export function updateContainer(
       );
     }
   }
-
+  // 创建更新对象并设置其有效负载（element）
   const update = createUpdate(eventTime, lane);
   // Caution: React DevTools currently depends on this property
   // being called "element".
   update.payload = {element};
-
+  // 处理回调函数
   callback = callback === undefined ? null : callback;
   if (callback !== null) {
     if (__DEV__) {
@@ -377,13 +381,13 @@ export function updateContainer(
     }
     update.callback = callback;
   }
-
+  // 将更新入队并调度更新
   const root = enqueueUpdate(current, update, lane);
   if (root !== null) {
     scheduleUpdateOnFiber(root, current, lane, eventTime);
     entangleTransitions(root, current, lane);
   }
-
+  // 返回更新车道
   return lane;
 }
 
